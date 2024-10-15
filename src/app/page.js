@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import Image from "next/image";
 import axios from 'axios';
 
-function NFTTransactions({ transactions }) {
+function ContractTransactions({ transactions }) {
   return (
     <div className="mt-8 w-full max-w-6xl">
-      <h2 className="text-2xl font-bold mb-4">NFT Transactions</h2>
+      <h2 className="text-2xl font-bold mb-4">Contract Transactions</h2>
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-300">
           <thead>
@@ -17,7 +17,7 @@ function NFTTransactions({ transactions }) {
               <th className="py-2 px-4 border-b">Date Time (UTC)</th>
               <th className="py-2 px-4 border-b">From</th>
               <th className="py-2 px-4 border-b">To</th>
-              <th className="py-2 px-4 border-b">Token ID</th>
+              <th className="py-2 px-4 border-b">Value (MATIC)</th>
               <th className="py-2 px-4 border-b">Method</th>
             </tr>
           </thead>
@@ -29,8 +29,8 @@ function NFTTransactions({ transactions }) {
                 <td className="py-2 px-4 border-b">{new Date(parseInt(tx.timeStamp) * 1000).toUTCString()}</td>
                 <td className="py-2 px-4 border-b">{tx.from.slice(0, 10)}...</td>
                 <td className="py-2 px-4 border-b">{tx.to.slice(0, 10)}...</td>
-                <td className="py-2 px-4 border-b">{tx.tokenID}</td>
-                <td className="py-2 px-4 border-b">{tx.from === '0x0000000000000000000000000000000000000000' ? 'Create Token' : 'Transfer'}</td>
+                <td className="py-2 px-4 border-b">{parseFloat(tx.value) / 1e18}</td>
+                <td className="py-2 px-4 border-b">{tx.functionName ? tx.functionName.split('(')[0] : 'Transfer'}</td>
               </tr>
             ))}
           </tbody>
@@ -41,12 +41,12 @@ function NFTTransactions({ transactions }) {
 }
 
 export default function Home() {
-  const [nftTransactions, setNftTransactions] = useState([]);
+  const [contractTransactions, setContractTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchNFTTransactions = async () => {
+    const fetchContractTransactions = async () => {
       try {
         const CONTRACT_ADDRESS = '0xedc38b1ff69dd823c251e7094d6ddfd42af9aba4';
         const API_ENDPOINT = 'https://api.polygonscan.com/api';
@@ -55,8 +55,8 @@ export default function Home() {
         const response = await axios.get(API_ENDPOINT, {
           params: {
             module: 'account',
-            action: 'tokennfttx',
-            contractaddress: CONTRACT_ADDRESS,
+            action: 'txlist',
+            address: CONTRACT_ADDRESS,
             startblock: 0,
             endblock: 99999999,
             sort: 'desc',
@@ -65,9 +65,9 @@ export default function Home() {
         });
 
         if (response.data.status === '1') {
-          setNftTransactions(response.data.result);
+          setContractTransactions(response.data.result);
         } else {
-          throw new Error(response.data.message || 'Failed to fetch NFT transactions');
+          throw new Error(response.data.message || 'Failed to fetch contract transactions');
         }
       } catch (err) {
         setError(err.message);
@@ -76,7 +76,7 @@ export default function Home() {
       }
     };
 
-    fetchNFTTransactions();
+    fetchContractTransactions();
   }, []);
 
   return (
@@ -90,13 +90,13 @@ export default function Home() {
           height={38}
           priority
         />
-        <h1 className="text-3xl font-bold mb-4">NFT Transaction Viewer</h1>
+        <h1 className="text-3xl font-bold mb-4">Contract Transaction Viewer</h1>
         {isLoading ? (
-          <p>Loading NFT transactions...</p>
+          <p>Loading contract transactions...</p>
         ) : error ? (
           <p className="text-red-500">Error: {error}</p>
         ) : (
-          <NFTTransactions transactions={nftTransactions} />
+          <ContractTransactions transactions={contractTransactions} />
         )}
       </main>
     </div>
