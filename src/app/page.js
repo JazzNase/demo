@@ -2,12 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import Image from "next/image";
-import axios from 'axios';
 
-function ContractTransactions({ transactions }) {
+function NFTTransactions({ transactions }) {
+  const getModifiedMethod = (method) => {
+    switch (method) {
+      case "Create Token":
+        return "Mint NFT";
+      case "Execute Sale":
+        return "Bought";
+      case "Cancel Sale":
+        return "Cancel Sale";
+      default:
+        return method;
+    }
+  };
+
   return (
     <div className="mt-8 w-full max-w-6xl">
-      <h2 className="text-2xl font-bold mb-4">Contract Transactions</h2>
+      <h2 className="text-2xl font-bold mb-4">NFT Transactions</h2>
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-300">
           <thead>
@@ -17,20 +29,20 @@ function ContractTransactions({ transactions }) {
               <th className="py-2 px-4 border-b">Date Time (UTC)</th>
               <th className="py-2 px-4 border-b">From</th>
               <th className="py-2 px-4 border-b">To</th>
-              <th className="py-2 px-4 border-b">Value (MATIC)</th>
+              <th className="py-2 px-4 border-b">Token ID</th>
               <th className="py-2 px-4 border-b">Method</th>
             </tr>
           </thead>
           <tbody>
             {transactions.map((tx, index) => (
               <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                <td className="py-2 px-4 border-b">{tx.hash.slice(0, 10)}...</td>
-                <td className="py-2 px-4 border-b">{tx.blockNumber}</td>
-                <td className="py-2 px-4 border-b">{new Date(parseInt(tx.timeStamp) * 1000).toUTCString()}</td>
-                <td className="py-2 px-4 border-b">{tx.from.slice(0, 10)}...</td>
-                <td className="py-2 px-4 border-b">{tx.to.slice(0, 10)}...</td>
-                <td className="py-2 px-4 border-b">{parseFloat(tx.value) / 1e18}</td>
-                <td className="py-2 px-4 border-b">{tx.functionName ? tx.functionName.split('(')[0] : 'Transfer'}</td>
+                <td className="py-2 px-4 border-b">{tx["Transaction Hash"].slice(0, 10)}...</td>
+                <td className="py-2 px-4 border-b">{tx.Blockno}</td>
+                <td className="py-2 px-4 border-b">{tx["DateTime (UTC)"]}</td>
+                <td className="py-2 px-4 border-b">{tx.From.slice(0, 10)}...</td>
+                <td className="py-2 px-4 border-b">{tx.To.slice(0, 10)}...</td>
+                <td className="py-2 px-4 border-b">{tx.Token_ID || 'N/A'}</td>
+                <td className="py-2 px-4 border-b">{getModifiedMethod(tx.Method)}</td>
               </tr>
             ))}
           </tbody>
@@ -41,34 +53,19 @@ function ContractTransactions({ transactions }) {
 }
 
 export default function Home() {
-  const [contractTransactions, setContractTransactions] = useState([]);
+  const [nftTransactions, setNftTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchContractTransactions = async () => {
+    const fetchTransactions = async () => {
       try {
-        const CONTRACT_ADDRESS = '0xedc38b1ff69dd823c251e7094d6ddfd42af9aba4';
-        const API_ENDPOINT = 'https://api.polygonscan.com/api';
-        const API_KEY = process.env.NEXT_PUBLIC_POLYGONSCAN_API_KEY;
-
-        const response = await axios.get(API_ENDPOINT, {
-          params: {
-            module: 'account',
-            action: 'txlist',
-            address: CONTRACT_ADDRESS,
-            startblock: 0,
-            endblock: 99999999,
-            sort: 'desc',
-            apikey: API_KEY
-          }
-        });
-
-        if (response.data.status === '1') {
-          setContractTransactions(response.data.result);
-        } else {
-          throw new Error(response.data.message || 'Failed to fetch contract transactions');
+        const response = await fetch('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/csvjson-cUj9QMiHs6tRBDXRo01qQO2x923DJQ.json');
+        if (!response.ok) {
+          throw new Error('Failed to fetch data');
         }
+        const data = await response.json();
+        setNftTransactions(data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -76,7 +73,7 @@ export default function Home() {
       }
     };
 
-    fetchContractTransactions();
+    fetchTransactions();
   }, []);
 
   return (
@@ -90,13 +87,13 @@ export default function Home() {
           height={38}
           priority
         />
-        <h1 className="text-3xl font-bold mb-4">Contract Transaction Viewer</h1>
+        <h1 className="text-3xl font-bold mb-4">NFT Transaction Viewer</h1>
         {isLoading ? (
-          <p>Loading contract transactions...</p>
+          <p>Loading NFT transactions...</p>
         ) : error ? (
           <p className="text-red-500">Error: {error}</p>
         ) : (
-          <ContractTransactions transactions={contractTransactions} />
+          <NFTTransactions transactions={nftTransactions} />
         )}
       </main>
     </div>
